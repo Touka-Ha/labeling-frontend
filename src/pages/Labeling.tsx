@@ -128,6 +128,28 @@ export default function Labeling() {
     await fetchNextVideo();
   }
 
+  async function skipVideo() {
+    if (!user || !current) return;
+
+    setBusy(true);
+    setStatus(null);
+
+    const { error } = await supabase.rpc("skip_video", {
+      p_video_id: current.id,
+      p_reason: "manual_skip",
+    });
+
+    setBusy(false);
+
+    if (error) {
+      setStatus("لم يتم التخطي: " + error.message);
+      return;
+    }
+
+    await fetchNextVideo();
+  }
+
+
   useEffect(() => {
     fetchNextVideo();
 
