@@ -28,6 +28,7 @@ export default function Labeling() {
   // to avoid stale values inside realtime callback
   const busyRef = useRef(false);
   const currentRef = useRef<VideoRow | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     busyRef.current = busy;
@@ -36,6 +37,21 @@ export default function Labeling() {
   useEffect(() => {
     currentRef.current = current;
   }, [current]);
+
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el || !videoUrl) return;
+
+    // نحاول نشغله فورًا (مع سياسات المتصفح لازم يكون muted)
+    const t = window.setTimeout(() => {
+      el.currentTime = 0;
+      el.play().catch(() => {
+        // إذا المتصفح منع التشغيل لأي سبب، ما ندير والو
+      });
+    }, 0);
+
+    return () => window.clearTimeout(t);
+  }, [videoUrl]);
 
   const labels = useMemo(
     () => [
@@ -220,11 +236,15 @@ export default function Labeling() {
           <div className="mt-3">
             {videoUrl ? (
               <video
+                ref={videoRef}
                 key={videoUrl}
                 src={videoUrl}
                 controls
+                autoPlay
+                muted
                 playsInline
-                className="w-full rounded-2xl bg-black max-h-[520px]"
+                preload="auto"
+                className="w-full rounded-2xl bg-black max-h-[520px]"              
               />
             ) : (
               <div className="w-full rounded-2xl bg-slate-100 h-[320px] grid place-items-center text-slate-500">
