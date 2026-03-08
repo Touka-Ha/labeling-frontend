@@ -228,6 +228,18 @@ export default function Labeling() {
             )}
           </div>
 
+          {/* ✅ NEW: Skip button */}
+          <div className="mt-4">
+            <button
+              type="button"
+              onClick={skipVideo}
+              disabled={!current || busy}
+              className="rounded-xl px-4 py-2 font-semibold border border-slate-200 bg-white text-slate-900 disabled:opacity-60"
+            >
+              تخطي
+            </button>
+          </div>
+          
           {/* Extra flags (optional) */}
           <div className="mt-4 flex flex-wrap gap-2">
             <button
