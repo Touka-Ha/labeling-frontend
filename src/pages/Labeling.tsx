@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../auth/AuthProvider";
 import { useNavigate } from "react-router-dom";
@@ -21,11 +21,30 @@ export default function Labeling() {
   const [busy, setBusy] = useState(false);
   const [countDone, setCountDone] = useState<number>(0);
 
-  const labels = useMemo(() => ([
-    { key: "جيد", color: "bg-emerald-600" },
-    { key: "مقبول", color: "bg-amber-600" },
-    { key: "سيء", color: "bg-rose-600" },
-  ]), []);
+  // toggles
+  const [hasMusic, setHasMusic] = useState(false);
+  const [isForeignLanguage, setIsForeignLanguage] = useState(false);
+
+  // to avoid stale values inside realtime callback
+  const busyRef = useRef(false);
+  const currentRef = useRef<VideoRow | null>(null);
+
+  useEffect(() => {
+    busyRef.current = busy;
+  }, [busy]);
+
+  useEffect(() => {
+    currentRef.current = current;
+  }, [current]);
+
+  const labels = useMemo(
+    () => [
+      { key: "جيد", color: "bg-emerald-600" },
+      { key: "مقبول", color: "bg-amber-600" },
+      { key: "سيء", color: "bg-rose-600" },
+    ],
+    []
+  );
 
   async function logout() {
     await supabase.auth.signOut();
@@ -42,7 +61,6 @@ export default function Labeling() {
     setCountDone(count ?? 0);
   }
 
-  // اختيار فيديو غير موسوم لهذا المستخدم (حل بسيط الآن)
   async function fetchNextVideo() {
     if (!user) return;
 
@@ -51,56 +69,31 @@ export default function Labeling() {
     setCurrent(null);
     setVideoUrl(null);
 
-    const { data: labeled, error: e1 } = await supabase
-      .from("labels")
-      .select("video_id")
-      .eq("user_id", user.id)
-      .limit(5000);
+    const { data, error } = await supabase.rpc("next_video");
+    setBusy(false);
 
-    if (e1) {
-      setBusy(false);
-      setStatus("خطأ في قراءة labels: " + e1.message);
+    if (error) {
+      setStatus("خطأ في next_video(): " + error.message);
       return;
     }
 
-    const ids = (labeled ?? [])
-      .map((x) => x.video_id)
-      .filter((x) => typeof x === "number") as number[];
+    const v: VideoRow | null = data?.[0] ?? null;
 
-    let q = supabase
-      .from("videos")
-      .select("id,storage_bucket,storage_path,title,created_at")
-      .order("created_at", { ascending: false })
-      .limit(1);
-
-    if (ids.length > 0) {
-      q = q.not("id", "in", `(${ids.join(",")})`);
-    }
-
-    const { data: vids, error: e2 } = await q;
-
-    if (e2) {
-      setBusy(false);
-      setStatus("خطأ في قراءة videos: " + e2.message);
-      return;
-    }
-
-    const v = vids?.[0] ?? null;
     if (!v) {
-      setBusy(false);
-      setStatus("✅ لا يوجد فيديوهات جديدة غير موسومة لك حاليًا.");
+      setStatus("✅ لا يوجد فيديو مناسب لك الآن. سيظهر تلقائيًا عند إضافة فيديوهات جديدة.");
       await refreshDoneCount();
       return;
     }
 
     setCurrent(v);
 
-    const { data: signed, error: e3 } = await supabase
-      .storage
+    // reset toggles for each new video
+    setHasMusic(false);
+    setIsForeignLanguage(false);
+
+    const { data: signed, error: e3 } = await supabase.storage
       .from(v.storage_bucket)
       .createSignedUrl(v.storage_path, 60 * 60);
-
-    setBusy(false);
 
     if (e3 || !signed?.signedUrl) {
       setStatus("خطأ في Signed URL: " + (e3?.message ?? "unknown"));
@@ -113,6 +106,7 @@ export default function Labeling() {
 
   async function saveLabel(label: string) {
     if (!user || !current) return;
+
     setBusy(true);
     setStatus(null);
 
@@ -120,6 +114,8 @@ export default function Labeling() {
       video_id: current.id,
       user_id: user.id,
       label,
+      has_music: hasMusic,
+      is_foreign_language: isForeignLanguage,
     });
 
     setBusy(false);
@@ -135,14 +131,23 @@ export default function Labeling() {
   useEffect(() => {
     fetchNextVideo();
 
-    const onKey = (e: KeyboardEvent) => {
-      if (busy) return;
-      if (e.key === "1") saveLabel("جيد");
-      if (e.key === "2") saveLabel("مقبول");
-      if (e.key === "3") saveLabel("سيء");
+    const ch = supabase
+      .channel("realtime-videos")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "videos" },
+        () => {
+          // only auto-fetch when user is waiting with no current video
+          if (!busyRef.current && !currentRef.current) {
+            fetchNextVideo();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(ch);
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -156,6 +161,7 @@ export default function Labeling() {
               المستخدم: <span className="font-mono">{user?.email}</span> — تم وسم: <b>{countDone}</b>
             </p>
           </div>
+
           <div className="flex gap-2">
             <button
               onClick={fetchNextVideo}
@@ -207,6 +213,36 @@ export default function Labeling() {
             )}
           </div>
 
+          {/* Extra flags (optional) */}
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setHasMusic((v) => !v)}
+              disabled={!current || busy}
+              className={`rounded-xl px-4 py-2 font-semibold border disabled:opacity-60 ${
+                hasMusic
+                  ? "bg-slate-900 text-white border-slate-900"
+                  : "bg-white text-slate-900 border-slate-200"
+              }`}
+            >
+              {hasMusic ? "✅ موسيقى" : "موسيقى"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsForeignLanguage((v) => !v)}
+              disabled={!current || busy}
+              className={`rounded-xl px-4 py-2 font-semibold border disabled:opacity-60 ${
+                isForeignLanguage
+                  ? "bg-slate-900 text-white border-slate-900"
+                  : "bg-white text-slate-900 border-slate-200"
+              }`}
+            >
+              {isForeignLanguage ? "✅ لغة أجنبية" : "لغة أجنبية"}
+            </button>
+          </div>
+
+          {/* Base label buttons (required) */}
           <div className="mt-4 flex flex-wrap gap-2">
             {labels.map((x) => (
               <button
@@ -219,10 +255,6 @@ export default function Labeling() {
               </button>
             ))}
           </div>
-
-          <p className="mt-3 text-xs text-slate-500">
-            اختصارات: 1 = جيد، 2 = مقبول، 3 = سيء
-          </p>
         </div>
       </div>
     </div>
