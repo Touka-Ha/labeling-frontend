@@ -121,10 +121,15 @@ export default function Labeling() {
     setBusy(false);
 
     if (error) {
+      // ✅ لو كان duplicate (نفس الفيديو نفس المستخدم) نعتبره محسوم ونجيب التالي
+      if (error.code === "23505") {
+        setStatus("ℹ️ تم تسجيل هذا الفيديو مسبقًا، سيتم الانتقال للفيديو التالي.");
+        await fetchNextVideo();
+        return;
+      }
       setStatus("لم يتم الحفظ: " + error.message);
       return;
     }
-
     await fetchNextVideo();
   }
 
@@ -239,7 +244,7 @@ export default function Labeling() {
               تخطي
             </button>
           </div>
-          
+
           {/* Extra flags (optional) */}
           <div className="mt-4 flex flex-wrap gap-2">
             <button
