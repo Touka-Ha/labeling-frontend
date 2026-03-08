@@ -164,13 +164,6 @@ export default function Labeling() {
 
           <div className="flex gap-2">
             <button
-              onClick={fetchNextVideo}
-              className="rounded-xl px-4 py-2 bg-slate-200 text-slate-900 font-semibold disabled:opacity-60"
-              disabled={busy}
-            >
-              تحديث
-            </button>
-            <button
               onClick={logout}
               className="rounded-xl px-4 py-2 bg-slate-900 text-white font-semibold"
             >
