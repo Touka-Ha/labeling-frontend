@@ -29,6 +29,8 @@ export default function Labeling() {
   const busyRef = useRef(false);
   const currentRef = useRef<VideoRow | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [soundWanted, setSoundWanted] = useState(true); // نحاول الصوت تلقائيًا
+  const [soundBlocked, setSoundBlocked] = useState(false); // هل المتصفح منع الصوت؟
 
   useEffect(() => {
     busyRef.current = busy;
@@ -51,6 +53,21 @@ export default function Labeling() {
     }, 0);
 
     return () => window.clearTimeout(t);
+  }, [videoUrl]);
+
+  useEffect(() => {
+    if (!videoUrl) return;
+    // نخلي المتصفح يحمل metadata ثم نحاول play
+    const el = videoRef.current;
+    if (!el) return;
+
+    const onLoaded = () => {
+      tryAutoPlay();
+    };
+
+    el.addEventListener("loadedmetadata", onLoaded);
+    return () => el.removeEventListener("loadedmetadata", onLoaded);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoUrl]);
 
   const labels = useMemo(
@@ -170,6 +187,36 @@ export default function Labeling() {
     await fetchNextVideo();
   }
 
+  async function tryAutoPlay() {
+    const el = videoRef.current;
+    if (!el) return;
+
+    // نبدأ من البداية
+    try {
+      el.currentTime = 0;
+    } catch {}
+
+    // (A) محاولة تشغيل بالصوت إذا نريد
+    if (soundWanted) {
+      try {
+        el.muted = false;
+        await el.play();
+        setSoundBlocked(false);
+        return;
+      } catch {
+        // blocked غالبًا
+        setSoundBlocked(true);
+      }
+    }
+
+    // (B) fallback: تشغيل muted (عادة ينجح)
+    try {
+      el.muted = true;
+      await el.play();
+    } catch {
+      // حتى muted ممكن يفشل نادرًا (saving mode)، ما نكسرش الواجهة
+    }
+  }
 
   useEffect(() => {
     fetchNextVideo();
@@ -240,11 +287,9 @@ export default function Labeling() {
                 key={videoUrl}
                 src={videoUrl}
                 controls
-                autoPlay
-                muted
                 playsInline
                 preload="auto"
-                className="w-full rounded-2xl bg-black max-h-[520px]"              
+                className="w-full rounded-2xl bg-black max-h-[520px]"
               />
             ) : (
               <div className="w-full rounded-2xl bg-slate-100 h-[320px] grid place-items-center text-slate-500">
@@ -252,6 +297,33 @@ export default function Labeling() {
               </div>
             )}
           </div>
+
+          {soundBlocked && (
+            <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-slate-100 p-3">
+              <div className="text-sm text-slate-700">
+                المتصفح منع تشغيل الصوت تلقائيًا. اضغط لتفعيل الصوت (مرة واحدة).
+              </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  setSoundWanted(true);
+                  const el = videoRef.current;
+                  if (!el) return;
+                  try {
+                    el.muted = false;
+                    await el.play(); // هذا الآن عنده user gesture، غالبًا ينجح
+                    setSoundBlocked(false);
+                  } catch {
+                    // إذا فشل حتى بعد الضغط، نخليه muted
+                    el.muted = true;
+                  }
+                }}
+                className="rounded-xl px-4 py-2 bg-slate-900 text-white font-semibold"
+              >
+                🔊 تشغيل الصوت
+              </button>
+            </div>
+          )}
 
           {/* ✅ NEW: Skip button */}
           <div className="mt-4">
