@@ -254,7 +254,7 @@ export default function Labeling() {
               {/* ديني لطيف */}
               <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
                 <span className="px-3 py-1 rounded-full bg-emerald-50/80 text-emerald-800 border border-emerald-200">
-                  ﴿ وَقُل رَّبِّ زِدْنِي عِلْمًا ﴾
+                  ﴿ فَادْعُوا اللَّهَ مُخْلِصِينَ لَهُ الدِّينَ وَلَوْ كَرِهَ الْكَافِرُونَ  ﴾  [غافر:14]
                 </span>
 
                 <span className="px-3 py-1 rounded-full bg-white/70 text-slate-700 border border-slate-200">
@@ -429,7 +429,7 @@ export default function Labeling() {
 
             {/* Footer hint صغير */}
             <div className="mt-5 text-xs text-slate-600">
-              تذكير: اضبطي النية واحتسبي الأجر — هذا عمل منظم لخدمة مشروعك.
+              تذكير: اضبطوا النية واحتسبوا الأجر — هذا عمل لخدمة الدين ان شاء الله.
             </div>
           </div>
         </div>
