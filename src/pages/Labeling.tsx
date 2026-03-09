@@ -244,43 +244,7 @@ export default function Labeling() {
   return (
     <div className="min-h-screen p-5 bg-gradient-to-br from-emerald-100 via-green-100 to-teal-100">
       <div className="max-w-4xl mx-auto space-y-4">
-        {/* Header */}
-        <div className="rounded-3xl p-[2px] bg-gradient-to-r from-emerald-600 via-green-500 to-teal-500 shadow-xl shadow-emerald-200/70">
-          <div className="bg-white/75 backdrop-blur-xl rounded-3xl p-5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
-                صفحة التصنيف
-              </h1>
-
-              {/* ديني لطيف */}
-              <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
-                <span className="px-3 py-1 rounded-full bg-emerald-50/80 text-emerald-800 border border-emerald-200">
-                  ﴿ فَادْعُوا اللَّهَ مُخْلِصِينَ لَهُ الدِّينَ وَلَوْ كَرِهَ الْكَافِرُونَ  ﴾  [غافر:14]
-                </span>
-
-                <span className="px-3 py-1 rounded-full bg-white/70 text-slate-700 border border-slate-200">
-                  المستخدم: <span className="font-mono">{user?.email}</span>
-                </span>
-
-                <span className="px-3 py-1 rounded-full bg-emerald-50/80 text-emerald-800 border border-emerald-200">
-                  تم وسم: <b className="text-emerald-950">{countDone}</b>
-                </span>
-              </div>
-            </div>
-
-            <button
-              onClick={logout}
-              className="rounded-2xl px-5 py-2.5 text-white font-semibold
-                         bg-gradient-to-r from-slate-900 to-slate-800
-                         shadow-lg shadow-slate-900/10 hover:from-slate-800 hover:to-slate-700
-                         active:scale-[0.99] transition"
-            >
-              خروج
-            </button>
-          </div>
-        </div>
-
-        {/* Main */}
+        {/* Main (Video Box) */}
         <div className="rounded-3xl p-[2px] bg-gradient-to-r from-emerald-600 via-green-500 to-teal-500 shadow-xl shadow-emerald-200/60">
           <div className="bg-white/75 backdrop-blur-xl rounded-3xl p-5">
             {status && (
@@ -288,6 +252,17 @@ export default function Labeling() {
                 {status}
               </div>
             )}
+
+            <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
+                صفحة التصنيف
+            </h1>
+
+            {/* ✅ Verse moved هنا (فوق Video ID) */}
+            <div className="mb-3">
+              <span className="inline-flex px-3 py-1 rounded-full bg-emerald-50/80 text-emerald-800 border border-emerald-200 text-sm">
+                ﴿ فَادْعُوا اللَّهَ مُخْلِصِينَ لَهُ الدِّينَ وَلَوْ كَرِهَ الْكَافِرُونَ ﴾ [غافر:14]
+              </span>
+            </div>
 
             {/* Meta */}
             <div className="text-slate-800">
@@ -309,7 +284,6 @@ export default function Labeling() {
             <div className="mt-3">
               {videoUrl ? (
                 <div className="rounded-3xl overflow-hidden border border-slate-200 shadow-lg shadow-slate-200/60 bg-black">
-                  {/* ✅ ثابت: إطار فيديو بارتفاع من الشاشة */}
                   <div className="relative w-full h-[62vh] min-h-[320px] max-h-[560px] bg-black">
                     <video
                       ref={videoRef}
@@ -359,25 +333,6 @@ export default function Labeling() {
                 </button>
               </div>
             )}
-
-            {/* Skip */}
-            <div className="mt-4">
-              <button
-                type="button"
-                onClick={skipVideo}
-                disabled={!current || busy}
-                className="
-                  rounded-2xl px-6 py-3 font-extrabold text-white
-                  bg-gradient-to-r from-emerald-800 via-green-700 to-teal-700
-                  shadow-xl shadow-emerald-200/70
-                  hover:from-emerald-700 hover:via-green-600 hover:to-teal-600
-                  active:scale-[0.99] transition
-                  disabled:opacity-60
-                "
-              >
-                تخطي
-              </button>
-            </div>
 
             {/* Flags */}
             <div className="mt-4 flex flex-wrap gap-2">
@@ -431,10 +386,57 @@ export default function Labeling() {
               ))}
             </div>
 
-            {/* Footer hint صغير */}
-            <div className="mt-5 text-xs text-slate-600">
-              تذكير: اضبطوا النية واحتسبوا الأجر — هذا عمل لخدمة الدين ان شاء الله.
+            {/* ✅ Skip moved here (تحت أزرار جيد/مقبول/سيء) */}
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={skipVideo}
+                disabled={!current || busy}
+                className="
+                  rounded-2xl px-6 py-3 font-extrabold text-white
+                  bg-gradient-to-r from-emerald-800 via-green-700 to-teal-700
+                  shadow-xl shadow-emerald-200/70
+                  hover:from-emerald-700 hover:via-green-600 hover:to-teal-600
+                  active:scale-[0.99] transition
+                  disabled:opacity-60
+                "
+              >
+                تخطي
+              </button>
             </div>
+
+            <div className="mt-5 text-xs text-slate-600">
+              تذكير: اضبطوا النية واحتسبوا الأجر — هذا عمل لخدمة الدين إن شاء الله.
+            </div>
+          </div>
+        </div>
+
+        {/* ✅ Header moved to bottom */}
+        <div className="rounded-3xl p-[2px] bg-gradient-to-r from-emerald-600 via-green-500 to-teal-500 shadow-xl shadow-emerald-200/70">
+          <div className="bg-white/75 backdrop-blur-xl rounded-3xl p-5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+              
+
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+                <span className="px-3 py-1 rounded-full bg-white/70 text-slate-700 border border-slate-200">
+                  المستخدم: <span className="font-mono">{user?.email}</span>
+                </span>
+
+                <span className="px-3 py-1 rounded-full bg-emerald-50/80 text-emerald-800 border border-emerald-200">
+                  تم وسم: <b className="text-emerald-950">{countDone}</b>
+                </span>
+              </div>
+            </div>
+
+            <button
+              onClick={logout}
+              className="rounded-2xl px-5 py-2.5 text-white font-semibold
+                         bg-gradient-to-r from-slate-900 to-slate-800
+                         shadow-lg shadow-slate-900/10 hover:from-slate-800 hover:to-slate-700
+                         active:scale-[0.99] transition"
+            >
+              خروج
+            </button>
           </div>
         </div>
       </div>
