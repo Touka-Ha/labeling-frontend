@@ -71,12 +71,12 @@ export default function Labeling() {
       {
         key: "جيد",
         color:
-          "bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 shadow-emerald-200/70",
+          "bg-gradient-to-r from-emerald-700 to-teal-600 hover:from-emerald-600 hover:to-teal-500 shadow-emerald-200/70",
       },
       {
         key: "مقبول",
         color:
-          "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 shadow-amber-200/70",
+          "bg-gradient-to-r from-lime-600 to-emerald-600 hover:from-lime-500 hover:to-emerald-500 shadow-lime-200/70",
       },
       {
         key: "سيء",
@@ -241,30 +241,38 @@ export default function Labeling() {
   }, []);
 
   return (
-    <div className="min-h-screen p-5 bg-gradient-to-br from-sky-100 via-indigo-100 to-pink-100">
+    <div className="min-h-screen p-5 bg-gradient-to-br from-emerald-100 via-green-100 to-teal-100">
       <div className="max-w-4xl mx-auto space-y-4">
         {/* Header */}
-        <div className="rounded-3xl p-[2px] bg-gradient-to-r from-indigo-500 via-sky-500 to-emerald-500 shadow-xl shadow-indigo-200/60">
+        <div className="rounded-3xl p-[2px] bg-gradient-to-r from-emerald-600 via-green-500 to-teal-500 shadow-xl shadow-emerald-200/70">
           <div className="bg-white/75 backdrop-blur-xl rounded-3xl p-5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
             <div>
               <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
                 صفحة التصنيف
               </h1>
 
+              {/* ديني لطيف */}
               <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
-                <span className="px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
+                <span className="px-3 py-1 rounded-full bg-emerald-50/80 text-emerald-800 border border-emerald-200">
+                  ﴿ وَقُل رَّبِّ زِدْنِي عِلْمًا ﴾
+                </span>
+
+                <span className="px-3 py-1 rounded-full bg-white/70 text-slate-700 border border-slate-200">
                   المستخدم: <span className="font-mono">{user?.email}</span>
                 </span>
 
-                <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
-                  تم وسم: <b className="text-emerald-900">{countDone}</b>
+                <span className="px-3 py-1 rounded-full bg-emerald-50/80 text-emerald-800 border border-emerald-200">
+                  تم وسم: <b className="text-emerald-950">{countDone}</b>
                 </span>
               </div>
             </div>
 
             <button
               onClick={logout}
-              className="rounded-2xl px-5 py-2.5 bg-slate-900 text-white font-semibold shadow-lg shadow-slate-900/10 hover:bg-slate-800 active:scale-[0.99] transition"
+              className="rounded-2xl px-5 py-2.5 text-white font-semibold
+                         bg-gradient-to-r from-slate-900 to-slate-800
+                         shadow-lg shadow-slate-900/10 hover:from-slate-800 hover:to-slate-700
+                         active:scale-[0.99] transition"
             >
               خروج
             </button>
@@ -272,10 +280,10 @@ export default function Labeling() {
         </div>
 
         {/* Main */}
-        <div className="rounded-3xl p-[2px] bg-gradient-to-r from-indigo-500 via-pink-500 to-amber-500 shadow-xl shadow-pink-200/50">
+        <div className="rounded-3xl p-[2px] bg-gradient-to-r from-emerald-600 via-green-500 to-teal-500 shadow-xl shadow-emerald-200/60">
           <div className="bg-white/75 backdrop-blur-xl rounded-3xl p-5">
             {status && (
-              <div className="mb-3 rounded-2xl border border-amber-200 bg-amber-50 text-amber-900 px-4 py-3 text-sm shadow-sm">
+              <div className="mb-3 rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-900 px-4 py-3 text-sm shadow-sm">
                 {status}
               </div>
             )}
@@ -299,7 +307,7 @@ export default function Labeling() {
             {/* Video */}
             <div className="mt-3">
               {videoUrl ? (
-                <div className="rounded-3xl overflow-hidden border border-slate-200 shadow-lg shadow-slate-200/60 bg-black">
+                <div className="rounded-3xl overflow-hidden border border-emerald-200 shadow-lg shadow-emerald-200/60 bg-black">
                   <video
                     ref={videoRef}
                     key={videoUrl}
@@ -311,7 +319,7 @@ export default function Labeling() {
                   />
                 </div>
               ) : (
-                <div className="w-full rounded-3xl border border-slate-200 bg-white/70 h-[320px] grid place-items-center text-slate-600">
+                <div className="w-full rounded-3xl border border-emerald-200 bg-white/70 h-[320px] grid place-items-center text-slate-600">
                   {busy ? "تحميل..." : "بانتظار الفيديو..."}
                 </div>
               )}
@@ -319,7 +327,7 @@ export default function Labeling() {
 
             {/* Sound */}
             {soundBlocked && (
-              <div className="mt-3 flex items-center justify-between gap-3 rounded-3xl border border-slate-200 bg-white/80 p-4 shadow-sm">
+              <div className="mt-3 flex items-center justify-between gap-3 rounded-3xl border border-emerald-200 bg-white/80 p-4 shadow-sm">
                 <div className="text-sm text-slate-700 leading-relaxed">
                   المتصفح منع تشغيل الصوت تلقائيًا. اضغط لتفعيل الصوت (مرة واحدة).
                 </div>
@@ -337,7 +345,11 @@ export default function Labeling() {
                       el.muted = true;
                     }
                   }}
-                  className="rounded-2xl px-5 py-2.5 text-white font-semibold bg-gradient-to-r from-indigo-600 to-sky-600 shadow-lg shadow-indigo-200/70 hover:from-indigo-500 hover:to-sky-500 active:scale-[0.99] transition"
+                  className="rounded-2xl px-5 py-2.5 text-white font-semibold
+                             bg-gradient-to-r from-emerald-700 to-teal-600
+                             shadow-lg shadow-emerald-200/70
+                             hover:from-emerald-600 hover:to-teal-500
+                             active:scale-[0.99] transition"
                 >
                   🔊 تشغيل الصوت
                 </button>
@@ -352,9 +364,9 @@ export default function Labeling() {
                 disabled={!current || busy}
                 className="
                   rounded-2xl px-6 py-3 font-extrabold text-white
-                  bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600
-                  shadow-xl shadow-fuchsia-200/70
-                  hover:from-violet-500 hover:via-fuchsia-500 hover:to-pink-500
+                  bg-gradient-to-r from-emerald-800 via-green-700 to-teal-700
+                  shadow-xl shadow-emerald-200/70
+                  hover:from-emerald-700 hover:via-green-600 hover:to-teal-600
                   active:scale-[0.99] transition
                   disabled:opacity-60
                 "
@@ -371,8 +383,8 @@ export default function Labeling() {
                 disabled={!current || busy}
                 className={`rounded-2xl px-4 py-2 font-semibold border shadow-sm transition active:scale-[0.99] disabled:opacity-60 ${
                   hasMusic
-                    ? "bg-gradient-to-r from-slate-900 to-slate-700 text-white border-slate-900"
-                    : "bg-white/80 text-slate-900 border-slate-200 hover:bg-white"
+                    ? "bg-gradient-to-r from-emerald-900 to-emerald-700 text-white border-emerald-900"
+                    : "bg-white/80 text-slate-900 border-emerald-200 hover:bg-white"
                 }`}
               >
                 {hasMusic ? "✅ موسيقى" : "موسيقى"}
@@ -384,8 +396,8 @@ export default function Labeling() {
                 disabled={!current || busy}
                 className={`rounded-2xl px-4 py-2 font-semibold border shadow-sm transition active:scale-[0.99] disabled:opacity-60 ${
                   isForeignLanguage
-                    ? "bg-gradient-to-r from-slate-900 to-slate-700 text-white border-slate-900"
-                    : "bg-white/80 text-slate-900 border-slate-200 hover:bg-white"
+                    ? "bg-gradient-to-r from-emerald-900 to-emerald-700 text-white border-emerald-900"
+                    : "bg-white/80 text-slate-900 border-emerald-200 hover:bg-white"
                 }`}
               >
                 {isForeignLanguage ? "✅ لغة أجنبية" : "لغة أجنبية"}
@@ -413,6 +425,11 @@ export default function Labeling() {
                   {x.key}
                 </button>
               ))}
+            </div>
+
+            {/* Footer hint صغير */}
+            <div className="mt-5 text-xs text-slate-600">
+              تذكير: اضبطي النية واحتسبي الأجر — هذا عمل منظم لخدمة مشروعك.
             </div>
           </div>
         </div>
