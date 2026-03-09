@@ -76,7 +76,7 @@ export default function Labeling() {
       {
         key: "مقبول",
         color:
-          "bg-gradient-to-r from-lime-600 to-emerald-600 hover:from-lime-500 hover:to-emerald-500 shadow-lime-200/70",
+          "bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 shadow-yellow-200/70",
       },
       {
         key: "سيء",
@@ -109,6 +109,7 @@ export default function Labeling() {
     setStatus(null);
     setCurrent(null);
     setVideoUrl(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
 
     const { data, error } = await supabase.rpc("next_video");
     setBusy(false);
@@ -307,19 +308,22 @@ export default function Labeling() {
             {/* Video */}
             <div className="mt-3">
               {videoUrl ? (
-                <div className="rounded-3xl overflow-hidden border border-emerald-200 shadow-lg shadow-emerald-200/60 bg-black">
-                  <video
-                    ref={videoRef}
-                    key={videoUrl}
-                    src={videoUrl}
-                    controls
-                    playsInline
-                    preload="auto"
-                    className="w-full max-h-[520px]"
-                  />
+                <div className="rounded-3xl overflow-hidden border border-slate-200 shadow-lg shadow-slate-200/60 bg-black">
+                  {/* ✅ ثابت: إطار فيديو بارتفاع من الشاشة */}
+                  <div className="relative w-full h-[62vh] min-h-[320px] max-h-[560px] bg-black">
+                    <video
+                      ref={videoRef}
+                      key={videoUrl}
+                      src={videoUrl}
+                      controls
+                      playsInline
+                      preload="auto"
+                      className="absolute inset-0 w-full h-full object-contain"
+                    />
+                  </div>
                 </div>
               ) : (
-                <div className="w-full rounded-3xl border border-emerald-200 bg-white/70 h-[320px] grid place-items-center text-slate-600">
+                <div className="w-full rounded-3xl border border-slate-200 bg-white/70 h-[320px] grid place-items-center text-slate-600">
                   {busy ? "تحميل..." : "بانتظار الفيديو..."}
                 </div>
               )}
