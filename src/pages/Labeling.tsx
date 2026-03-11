@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { supabase } from "../lib/supabase";
-import { useAuth } from "../auth/AuthProvider";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthProvider";
+import { supabase } from "../lib/supabase";
 
 type VideoRow = {
   id: number;
@@ -363,8 +363,8 @@ export default function Labeling() {
               </button>
             </div>
 
-            {/* Labels */}
-            <div className="mt-4 flex flex-wrap gap-3 justify-end">
+            {/* Labels (✅ always one row) */}
+            <div className="mt-4 grid grid-cols-3 gap-3">
               {labels.map((x) => (
                 <button
                   key={x.key}
@@ -372,7 +372,9 @@ export default function Labeling() {
                   disabled={!current || busy}
                   className={`
                     ${x.color}
-                    text-white rounded-3xl px-8 py-3
+                    w-full
+                    text-white rounded-3xl
+                    py-3 px-2 sm:px-6
                     font-extrabold
                     shadow-xl
                     hover:brightness-110
