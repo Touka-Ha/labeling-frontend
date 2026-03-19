@@ -5,30 +5,11 @@ import { supabase } from "../lib/supabase";
 
 type VideoRow = {
   id: number;
-  storage_project?: "main" | "s1" | "s2";
   storage_bucket: string;
   storage_path: string;
   title: string | null;
   created_at?: string;
 };
-
-const STORAGE_BASE: Record<string, string | undefined> = {
-  // main: نخليه يأخذ من VITE_SUPABASE_URL كذلك كـ fallback
-  main: import.meta.env.VITE_SUPABASE_MAIN_URL || import.meta.env.VITE_SUPABASE_URL,
-  s1: import.meta.env.VITE_SUPABASE_S1_URL,
-  s2: import.meta.env.VITE_SUPABASE_S2_URL,
-};
-
-function encodePathKeepSlashes(p: string) {
-  return p.split("/").map(encodeURIComponent).join("/");
-}
-
-function publicObjectUrl(storageProject: string, bucket: string, path: string) {
-  const base = STORAGE_BASE[storageProject] || STORAGE_BASE.main;
-  if (!base) return "";
-  const safePath = encodePathKeepSlashes(path);
-  return `${base}/storage/v1/object/public/${bucket}/${safePath}`;
-}
 
 export default function Labeling() {
   const { user } = useAuth();
@@ -40,14 +21,13 @@ export default function Labeling() {
   const [busy, setBusy] = useState(false);
   const [countDone, setCountDone] = useState<number>(0);
 
-  // toggles
   const [hasMusic, setHasMusic] = useState(false);
   const [isForeignLanguage, setIsForeignLanguage] = useState(false);
 
-  // to avoid stale values inside realtime callback
   const busyRef = useRef(false);
   const currentRef = useRef<VideoRow | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+
   const [soundWanted, setSoundWanted] = useState(true);
   const [soundBlocked, setSoundBlocked] = useState(false);
 
@@ -82,7 +62,6 @@ export default function Labeling() {
     setCurrent(null);
     setVideoUrl(null);
 
-    // ✅ حتى لو فشل الفيديو، نحدّث العداد
     await refreshDoneCount();
 
     const { data, error } = await supabase.rpc("next_video");
@@ -96,7 +75,7 @@ export default function Labeling() {
     const v: VideoRow | null = data?.[0] ?? null;
 
     if (!v) {
-      setStatus("✅ لا يوجد فيديو مناسب لك الآن. سيظهر تلقائيًا عند إضافة فيديوهات جديدة.");
+      setStatus("✅ لا يوجد فيديو مناسب لك الآن.");
       return;
     }
 
@@ -104,17 +83,17 @@ export default function Labeling() {
     setHasMusic(false);
     setIsForeignLanguage(false);
 
-    // ✅ Public URL حسب storage_project (بدون signed url)
-    const url = publicObjectUrl(v.storage_project || "main", v.storage_bucket, v.storage_path);
+    // ✅ رجعنا Signed URL (main فقط)
+    const { data: signed, error: e3 } = await supabase.storage
+      .from(v.storage_bucket)
+      .createSignedUrl(v.storage_path, 60 * 60);
 
-    if (!url) {
-      setStatus("❌ روابط التخزين غير مضبوطة. تأكدي من Env Vars: VITE_SUPABASE_MAIN_URL / S1 / S2.");
+    if (e3 || !signed?.signedUrl) {
+      setStatus("خطأ في Signed URL: " + (e3?.message ?? "unknown"));
       return;
     }
 
-    setVideoUrl(url);
-
-    // scroll لطيف للفوق (اختياري)
+    setVideoUrl(signed.signedUrl);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -196,7 +175,6 @@ export default function Labeling() {
   }
 
   useEffect(() => {
-    // ✅ أول ما تفتح الصفحة: هات العداد + الفيديو
     refreshDoneCount();
     fetchNextVideo();
 
@@ -215,7 +193,6 @@ export default function Labeling() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // autoplay hook
   useEffect(() => {
     const el = videoRef.current;
     if (!el || !videoUrl) return;
@@ -374,7 +351,6 @@ export default function Labeling() {
               </button>
             </div>
 
-            {/* ✅ Labels: one row always */}
             <div className="mt-4 grid grid-cols-3 gap-3">
               {labels.map((x) => (
                 <button
