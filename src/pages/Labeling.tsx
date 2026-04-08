@@ -106,7 +106,6 @@ export default function Labeling() {
       if (isMountedRef.current) {
         setBusy(true);
         if (!opts?.keepStatus) setStatus(null);
-        setCurrent(null);
       }
 
       await refreshDoneCount();
@@ -117,6 +116,7 @@ export default function Labeling() {
 
       if (error) {
         setBusy(false);
+        setCurrent(null);
         setStatus({
           kind: "error",
           message: "تعذر جلب الفيديو التالي: " + error.message,
@@ -141,8 +141,6 @@ export default function Labeling() {
       setHasMusic(false);
       setIsForeignLanguage(false);
       setStatus(null);
-
-      window.scrollTo({ top: 0, behavior: "smooth" });
     },
     [refreshDoneCount, user]
   );
@@ -270,11 +268,18 @@ export default function Labeling() {
     window.open(current.permalink, "_blank", "noopener,noreferrer");
   }, [current?.permalink]);
 
+  const compactToggleClass = (active: boolean) =>
+    `rounded-2xl px-3 py-2 text-[13px] font-semibold border shadow-sm transition active:scale-[0.99] disabled:opacity-60 ${
+      active
+        ? "bg-gradient-to-r from-emerald-900 to-emerald-700 text-white border-emerald-900"
+        : "bg-white/90 text-slate-900 border-emerald-200 hover:bg-white"
+    }`;
+
   return (
-    <div className="min-h-screen p-5 bg-gradient-to-br from-emerald-100 via-green-100 to-teal-100">
+    <div className="min-h-screen p-3 sm:p-5 pb-40 sm:pb-5 bg-gradient-to-br from-emerald-100 via-green-100 to-teal-100">
       <div className="max-w-5xl mx-auto space-y-4">
         <div className="rounded-3xl p-[2px] bg-gradient-to-r from-emerald-600 via-green-500 to-teal-500 shadow-xl shadow-emerald-200/60">
-          <div className="bg-white/75 backdrop-blur-xl rounded-3xl p-5">
+          <div className="bg-white/75 backdrop-blur-xl rounded-3xl p-4 sm:p-5">
             {status && (
               <div
                 className={`mb-4 rounded-2xl border px-4 py-3 text-sm shadow-sm ${statusClasses(
@@ -287,51 +292,57 @@ export default function Labeling() {
 
             <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div>
-                <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
+                <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900">
                   صفحة التصنيف
                 </h1>
 
                 <div className="mt-2">
-                  <span className="inline-flex px-3 py-1 rounded-full bg-emerald-50/80 text-emerald-800 border border-emerald-200 text-sm">
+                  <span className="inline-flex px-3 py-1 rounded-full bg-emerald-50/80 text-emerald-800 border border-emerald-200 text-xs sm:text-sm">
                     ﴿ فَادْعُوا اللَّهَ مُخْلِصِينَ لَهُ الدِّينَ وَلَوْ كَرِهَ الْكَافِرُونَ ﴾ [غافر:14]
                   </span>
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-2 text-sm">
+              <div className="flex flex-wrap gap-2 text-xs sm:text-sm">
                 <span className="px-3 py-1 rounded-full bg-white/80 text-slate-700 border border-slate-200">
                   اختصارات: 1 جيد · 2 مقبول · 3 سيء · S تخطي
                 </span>
               </div>
             </div>
 
-            <div className="mt-4 rounded-2xl border border-slate-200 bg-white/70 px-4 py-3">
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-white/70 px-3 py-3 sm:px-4">
               {current ? (
-                <div className="space-y-1">
-                  <div className="font-semibold text-slate-900">
-                    Video ID: <span className="font-mono">{current.id}</span>
-                  </div>
-
-                  <div className="text-sm text-slate-600 break-all">
-                    {current.title?.trim() ? current.title : current.permalink}
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200 text-xs">
-                      embed_status: <b>{current.embed_status}</b>
-                    </span>
-
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
                     <button
                       type="button"
                       onClick={openCurrentInNewTab}
-                      className="px-3 py-1 rounded-full bg-white text-slate-800 border border-slate-300 text-xs font-semibold hover:bg-slate-50 transition"
+                      className="shrink-0 px-3 py-1 rounded-full bg-white text-slate-800 border border-slate-300 text-[12px] sm:text-xs font-semibold hover:bg-slate-50 transition"
                     >
                       فتح على Facebook
                     </button>
+
+                    <div className="font-semibold text-slate-900 text-sm sm:text-base whitespace-nowrap">
+                      Video ID: <span className="font-mono">{current.id}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="shrink-0 px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200 text-[11px] sm:text-xs whitespace-nowrap">
+                      embed_status: <b>{current.embed_status}</b>
+                    </span>
+
+                    <div
+                      dir="ltr"
+                      className="min-w-0 flex-1 text-[12px] sm:text-sm text-slate-600 text-left truncate"
+                      title={current.title?.trim() ? current.title : current.permalink}
+                    >
+                      {current.title?.trim() ? current.title : current.permalink}
+                    </div>
                   </div>
                 </div>
               ) : (
-                <div className="text-slate-500">
+                <div className="text-slate-500 text-sm">
                   {busy ? "جارٍ تحميل الفيديو التالي..." : "لا يوجد فيديو محمّل حاليًا"}
                 </div>
               )}
@@ -346,13 +357,23 @@ export default function Labeling() {
                         key={embedUrl}
                         src={embedUrl}
                         title={current.title ?? `facebook-video-${current.id}`}
-                        className="absolute inset-0 h-full w-full"
+                        className={`absolute inset-0 h-full w-full transition-opacity ${
+                          busy ? "opacity-60" : "opacity-100"
+                        }`}
                         style={{ border: "none", overflow: "hidden" }}
                         scrolling="no"
                         allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
                         allowFullScreen
                         referrerPolicy="strict-origin-when-cross-origin"
                       />
+
+                      {busy && (
+                        <div className="absolute inset-0 z-10 grid place-items-center bg-black/20">
+                          <div className="rounded-2xl bg-white/90 px-4 py-2 text-sm font-semibold text-slate-800 shadow">
+                            جارٍ تحميل الفيديو التالي...
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -363,14 +384,14 @@ export default function Labeling() {
               )}
 
               {current && (
-                <div className="mt-3 rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 text-center">
-                  إذا لم يظهر التضمين داخل الصفحة بشكل جيد، افتحي الرابط مباشرة من زر{" "}
-                  <span className="font-semibold">فتح على Facebook</span> ثم صنّفيه هنا.
+                <div className="mt-3 rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-xs sm:text-sm text-slate-700 text-center">
+                  إذا لم يظهر الفيديو،افتح من زر{" "}
+                  <span className="font-semibold">فتح على Facebook</span> 
                 </div>
               )}
             </div>
 
-            <div className="mt-4 flex flex-wrap gap-2 justify-end">
+            <div className="mt-4 hidden sm:flex flex-wrap gap-2 justify-end">
               <button
                 type="button"
                 onClick={() => setHasMusic((v) => !v)}
@@ -407,7 +428,7 @@ export default function Labeling() {
               </button>
             </div>
 
-            <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="mt-5 hidden sm:grid grid-cols-3 gap-3">
               {LABEL_OPTIONS.map((x) => (
                 <button
                   key={x.key}
@@ -428,7 +449,7 @@ export default function Labeling() {
               ))}
             </div>
 
-            <div className="mt-4 flex justify-start">
+            <div className="mt-4 hidden sm:flex justify-start">
               <button
                 type="button"
                 onClick={skipVideo}
@@ -449,7 +470,7 @@ export default function Labeling() {
         </div>
 
         <div className="rounded-3xl p-[2px] bg-gradient-to-r from-emerald-600 via-green-500 to-teal-500 shadow-xl shadow-emerald-200/70">
-          <div className="bg-white/75 backdrop-blur-xl rounded-3xl p-5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div className="bg-white/75 backdrop-blur-xl rounded-3xl p-4 sm:p-5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
             <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
               <span className="px-3 py-1 rounded-full bg-white/70 text-slate-700 border border-slate-200">
                 المستخدم: <span className="font-mono">{user?.email}</span>
@@ -468,6 +489,59 @@ export default function Labeling() {
                          active:scale-[0.99] transition"
             >
               خروج
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="sm:hidden fixed inset-x-0 bottom-0 z-40 px-3 pb-3">
+        <div className="mx-auto max-w-5xl rounded-3xl border border-emerald-200 bg-white/95 backdrop-blur-xl p-3 shadow-2xl shadow-slate-900/10">
+          <div className="grid grid-cols-3 gap-2">
+            {LABEL_OPTIONS.map((x) => (
+              <button
+                key={x.key}
+                onClick={() => saveLabel(x.key)}
+                disabled={!current || busy}
+                className={`
+                  ${x.color}
+                  min-w-0 whitespace-nowrap
+                  rounded-2xl py-2.5 px-1
+                  text-[13px] font-extrabold text-white
+                  shadow-lg transition active:scale-[0.99]
+                  disabled:opacity-60
+                `}
+              >
+                {x.key}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={() => setHasMusic((v) => !v)}
+              disabled={!current || busy}
+              className={compactToggleClass(hasMusic)}
+            >
+              {hasMusic ? "✅ موسيقى" : "موسيقى"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsForeignLanguage((v) => !v)}
+              disabled={!current || busy}
+              className={compactToggleClass(isForeignLanguage)}
+            >
+              {isForeignLanguage ? "✅ لغة أجنبية" : "لغة أجنبية"}
+            </button>
+
+            <button
+              type="button"
+              onClick={skipVideo}
+              disabled={!current || busy}
+              className="rounded-2xl px-3 py-2 text-[13px] font-bold text-white bg-gradient-to-r from-emerald-800 via-green-700 to-teal-700 shadow-sm transition active:scale-[0.99] disabled:opacity-60"
+            >
+              تخطي
             </button>
           </div>
         </div>
