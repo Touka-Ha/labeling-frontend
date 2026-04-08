@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Labeling from "./pages/Labeling";
 import ProtectedRoute from "./components/ProtectedRoute";
+import Admin from "./pages/Admin";
 
 export default function App() {
   return (
@@ -17,7 +18,9 @@ export default function App() {
           }
         />
         <Route path="*" element={<Navigate to="/app" replace />} />
+        <Route path="/admin" element={<Admin />} />
       </Routes>
     </BrowserRouter>
+    
   );
 }
