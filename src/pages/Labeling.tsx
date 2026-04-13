@@ -120,19 +120,6 @@ export default function Labeling() {
     }
   }, [user]);
 
-  const fetchDeliveryInfo = useCallback(async (videoId: number) => {
-    const { data, error } = await supabase.rpc("get_video_delivery_info", {
-      p_video_id: videoId,
-    });
-
-    if (error) {
-      return null;
-    }
-
-    const row = Array.isArray(data) ? data[0] : null;
-    return row ?? null;
-  }, []);
-
   const fetchNextVideo = useCallback(
     async (opts?: { keepStatus?: boolean }) => {
       if (!user) return;
