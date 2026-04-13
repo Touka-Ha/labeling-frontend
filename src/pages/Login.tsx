@@ -131,7 +131,7 @@ export default function Login() {
 
         {/* footer hint */}
         <div className="mt-4 text-center text-xs text-slate-600">
-          نصيحة: إذا واجهتِ مشكلة في الدخول، تأكدي أن الحساب تم إضافته في Supabase.
+          نصيحة: إذا واجهت مشكلة في الدخول، تأكد أن الحساب تم إضافته في Supabase.
         </div>
       </div>
     </div>
