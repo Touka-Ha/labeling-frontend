@@ -30,6 +30,12 @@ type StatusState = {
   message: string;
 } | null;
 
+type LabelBreakdown = {
+  good: number;
+  acceptable: number;
+  bad: number;
+};
+
 const LABEL_OPTIONS = [
   {
     key: "جيد" as const,
@@ -64,6 +70,15 @@ function statusClasses(kind?: StatusKind): string {
   }
 }
 
+function getTodayEncouragement(todayCount: number): string {
+  if (todayCount >= 500) return "انت رائع اليوم 😻🤩";
+  if (todayCount >= 200) return "جيد جداا 🥳✨";
+  if (todayCount >= 100) return "جيدا 🫡👏";
+  if (todayCount >= 50) return "احسنت 😊";
+  if (todayCount === 0) return " انت لم تصنف شيئا اليوم 😔😟";
+  return ` ${todayCount} — بداية طيبة واصل التصنيف للوصول للمرحلة التالية ✨`;
+}
+
 export default function Labeling() {
   const { user } = useAuth();
   const nav = useNavigate();
@@ -71,6 +86,12 @@ export default function Labeling() {
   const [current, setCurrent] = useState<VideoRow | null>(null);
   const [busy, setBusy] = useState<boolean>(false);
   const [countDone, setCountDone] = useState<number>(0);
+  const [todayCount, setTodayCount] = useState<number>(0);
+  const [labelBreakdown, setLabelBreakdown] = useState<LabelBreakdown>({
+    good: 0,
+    acceptable: 0,
+    bad: 0,
+  });
 
   const [hasMusic, setHasMusic] = useState<boolean>(false);
   const [isForeignLanguage, setIsForeignLanguage] = useState<boolean>(false);
@@ -83,6 +104,14 @@ export default function Labeling() {
 
   const isMountedRef = useRef<boolean>(true);
   const fetchSeqRef = useRef<number>(0);
+  const desktopVideoRef = useRef<HTMLVideoElement | null>(null);
+  const mobileVideoRef = useRef<HTMLVideoElement | null>(null);
+  const autoPlayedKeyRef = useRef<string>("");
+
+  const [isDesktop, setIsDesktop] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    return window.matchMedia("(min-width: 640px)").matches;
+  });
 
   const embedUrl = useMemo(() => {
     if (!current?.permalink) return null;
@@ -102,6 +131,56 @@ export default function Labeling() {
     };
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const media = window.matchMedia("(min-width: 640px)");
+    const onChange = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+
+    setIsDesktop(media.matches);
+
+    if (typeof media.addEventListener === "function") {
+      media.addEventListener("change", onChange);
+      return () => media.removeEventListener("change", onChange);
+    }
+
+    return;
+  }, []);
+
+  const tryPlayVideo = useCallback((video: HTMLVideoElement | null) => {
+    if (!video) return;
+    video.muted = false;
+    video.volume = 1;
+
+    const playPromise = video.play();
+    if (playPromise && typeof playPromise.catch === "function") {
+      void playPromise.catch(() => {
+        // autoplay with sound may be blocked by browser policy until user interaction
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    const activeVideo = isDesktop ? desktopVideoRef.current : mobileVideoRef.current;
+    const inactiveVideo = isDesktop ? mobileVideoRef.current : desktopVideoRef.current;
+
+    if (inactiveVideo) {
+      inactiveVideo.pause();
+    }
+
+    if (!localVideoUrl || !current?.id) return;
+
+    const autoPlayKey = `${current.id}|${localVideoUrl}`;
+    if (autoPlayedKeyRef.current === autoPlayKey) return;
+
+    const timeout = window.setTimeout(() => {
+      tryPlayVideo(activeVideo);
+      autoPlayedKeyRef.current = autoPlayKey;
+    }, 120);
+
+    return () => window.clearTimeout(timeout);
+  }, [isDesktop, localVideoUrl, current?.id, tryPlayVideo]);
+
   const logout = useCallback(async () => {
     await supabase.auth.signOut();
     nav("/login", { replace: true });
@@ -110,14 +189,50 @@ export default function Labeling() {
   const refreshDoneCount = useCallback(async () => {
     if (!user) return;
 
-    const { count, error } = await supabase
-      .from("labels")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id);
-
-    if (!error && isMountedRef.current) {
-      setCountDone(count ?? 0);
+    const startOfToday = new Date();
+    if (startOfToday.getHours() < 4) {
+      startOfToday.setDate(startOfToday.getDate() - 1);
     }
+    startOfToday.setHours(4, 0, 0, 0);
+    const startOfTodayIso = startOfToday.toISOString();
+
+    const [totalRes, goodRes, acceptableRes, badRes, todayRes] = await Promise.all([
+      supabase.from("labels").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+      supabase
+        .from("labels")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("label", "جيد"),
+      supabase
+        .from("labels")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("label", "مقبول"),
+      supabase
+        .from("labels")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("label", "سيء"),
+      supabase
+        .from("labels")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .gte("created_at", startOfTodayIso),
+    ]);
+
+    if (!isMountedRef.current) return;
+
+    if (!totalRes.error) {
+      setCountDone(totalRes.count ?? 0);
+    }
+
+    setLabelBreakdown({
+      good: goodRes.error ? 0 : (goodRes.count ?? 0),
+      acceptable: acceptableRes.error ? 0 : (acceptableRes.count ?? 0),
+      bad: badRes.error ? 0 : (badRes.count ?? 0),
+    });
+
+    setTodayCount(todayRes.error ? 0 : (todayRes.count ?? 0));
   }, [user]);
 
   const fetchNextVideo = useCallback(
@@ -370,7 +485,7 @@ export default function Labeling() {
       } else if (e.key.toLowerCase() === "s") {
         e.preventDefault();
         void skipVideo();
-      } else if (e.key.toLowerCase() === "m") {
+      } else if (e.key.toLowerCase() === "e") {
         e.preventDefault();
         setHasMusic((v) => !v);
       } else if (e.key.toLowerCase() === "a") {
@@ -422,7 +537,7 @@ export default function Labeling() {
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-1 text-sm text-slate-700">
                   <div translate="no" className="notranslate text-xs text-slate-500">
-                    اختصارات: 1 جيد · 2 مقبول · 3 سيء · M موسيقى · A لغة أجنبية · S تخطي
+                    اختصارات: 1 جيد · 2 مقبول · 3 سيء · E موسيقى · A لغة أجنبية · S تخطي
                   </div>
                   <div translate="no" className="notranslate text-xs text-slate-500">
                     ﴿ فَادْعُوا اللَّهَ مُخْلِصِينَ لَهُ الدِّينَ وَلَوْ كَرِهَ الْكَافِرُونَ ﴾ [غافر:14]
@@ -438,14 +553,16 @@ export default function Labeling() {
             <div className="p-5 lg:p-6">
               <div className="grid grid-cols-[280px_minmax(0,1fr)] gap-6">
                 <div className="flex items-start justify-center">
-                  {current && localVideoUrl ? (
+                  {current && localVideoUrl && isDesktop ? (
                     <div className="w-full max-w-[260px]">
                       <div className="rounded-[2rem] bg-slate-900 p-2 shadow-2xl shadow-slate-400/30">
                         <div className="relative aspect-[9/16] w-full overflow-hidden rounded-[1.6rem] bg-black">
                           <video
+                            ref={desktopVideoRef}
                             key={localVideoUrl}
                             src={localVideoUrl}
                             controls
+                            autoPlay
                             playsInline
                             preload="metadata"
                             className={`absolute inset-0 h-full w-full object-contain bg-black transition-opacity ${
@@ -466,7 +583,7 @@ export default function Labeling() {
                         </div>
                       </div>
                     </div>
-                  ) : current && embedUrl ? (
+                  ) : current && embedUrl && isDesktop ? (
                     <div className="w-full max-w-[260px]">
                       <div className="rounded-[2rem] bg-slate-900 p-2 shadow-2xl shadow-slate-400/30">
                         <div className="relative aspect-[9/16] w-full overflow-hidden rounded-[1.6rem] bg-black">
@@ -510,9 +627,45 @@ export default function Labeling() {
                 </div>
 
                 <div className="flex min-h-full flex-col">
-                  <div className="rounded-[1.4rem] border-[2px] border-slate-700/70 bg-white/85 px-5 py-4">
+                  <div className="mb-3 rounded-[1.2rem] border border-emerald-200/80 bg-white/85 px-4 py-3 shadow-sm">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        translate="no"
+                        className="notranslate rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700"
+                      >
+                        جيد: <b>{labelBreakdown.good}</b>
+                      </span>
+
+                      <span
+                        translate="no"
+                        className="notranslate rounded-full border border-yellow-200 bg-yellow-50 px-3 py-1 text-xs font-semibold text-yellow-700"
+                      >
+                        مقبول: <b>{labelBreakdown.acceptable}</b>
+                      </span>
+
+                      <span
+                        translate="no"
+                        className="notranslate rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700"
+                      >
+                        سيء: <b>{labelBreakdown.bad}</b>
+                      </span>
+
+                      <span
+                        translate="no"
+                        className="notranslate rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700"
+                      >
+                        اليوم: <b>{todayCount}</b>
+                      </span>
+                    </div>
+
+                    <div translate="no" className="notranslate mt-2 text-sm font-semibold text-slate-700">
+                      {getTodayEncouragement(todayCount)}
+                    </div>
+                  </div>
+
+                  <div className="rounded-[1.2rem] border-[2px] border-slate-700/70 bg-white/85 px-4 py-3">
                     {current ? (
-                      <div className="space-y-3">
+                      <div className="space-y-2.5">
                         <div className="flex items-center justify-between gap-3">
                           <button
                             type="button"
@@ -525,7 +678,7 @@ export default function Labeling() {
                             </span>
                           </button>
 
-                          <div translate="no" className="notranslate text-base font-bold text-slate-900">
+                          <div translate="no" className="notranslate text-[15px] font-bold text-slate-900">
                             <span translate="no" className="notranslate">
                               Video ID: <span className="font-mono">{current.id}</span>
                             </span>
@@ -535,7 +688,7 @@ export default function Labeling() {
                         <div
                           dir="ltr"
                           translate="no"
-                          className="notranslate truncate text-sm text-slate-600"
+                          className="notranslate truncate text-[13px] text-slate-600"
                           title={current.title?.trim() ? current.title : current.permalink}
                         >
                           {current.title?.trim() ? current.title : current.permalink}
@@ -544,21 +697,21 @@ export default function Labeling() {
                         <div className="flex flex-wrap items-center gap-2">
                           <span
                             translate="no"
-                            className="notranslate rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs text-slate-700"
+                            className="notranslate rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-[11px] text-slate-700"
                           >
                             embed_status: <b>{current.embed_status}</b>
                           </span>
 
                           <span
                             translate="no"
-                            className="notranslate rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs text-emerald-700"
+                            className="notranslate rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] text-emerald-700"
                           >
                             source: <b>{current.media_source ?? "facebook"}</b>
                           </span>
 
                           <span
                             translate="no"
-                            className="notranslate rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs text-slate-700"
+                            className="notranslate rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-[11px] text-slate-700"
                           >
                             download: <b>{current.download_status ?? "pending"}</b>
                           </span>
@@ -746,14 +899,41 @@ export default function Labeling() {
                     </span>
                   </div>
                 </div>
+              </div>
 
-                <div className="flex flex-wrap gap-2 text-xs sm:text-sm">
+              <div className="mt-4 rounded-2xl border border-emerald-200/80 bg-white/80 px-3 py-3 shadow-sm">
+                <div className="flex flex-wrap items-center gap-2">
                   <span
                     translate="no"
-                    className="notranslate px-3 py-1 rounded-full bg-white/80 text-slate-700 border border-slate-200"
+                    className="notranslate rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700"
                   >
-                    اختصارات: 1 جيد · 2 مقبول · 3 سيء · M موسيقى · A لغة أجنبية · S تخطي
+                    جيد: <b>{labelBreakdown.good}</b>
                   </span>
+
+                  <span
+                    translate="no"
+                    className="notranslate rounded-full border border-yellow-200 bg-yellow-50 px-3 py-1 text-[11px] font-semibold text-yellow-700"
+                  >
+                    مقبول: <b>{labelBreakdown.acceptable}</b>
+                  </span>
+
+                  <span
+                    translate="no"
+                    className="notranslate rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-[11px] font-semibold text-rose-700"
+                  >
+                    سيء: <b>{labelBreakdown.bad}</b>
+                  </span>
+
+                  <span
+                    translate="no"
+                    className="notranslate rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-[11px] font-semibold text-sky-700"
+                  >
+                    اليوم: <b>{todayCount}</b>
+                  </span>
+                </div>
+
+                <div translate="no" className="notranslate mt-2 text-xs font-semibold text-slate-700">
+                  {getTodayEncouragement(todayCount)}
                 </div>
               </div>
 
@@ -819,14 +999,16 @@ export default function Labeling() {
               </div>
 
               <div className="mt-5">
-                {current && localVideoUrl ? (
+                {current && localVideoUrl && !isDesktop ? (
                   <div className="mx-auto w-full max-w-[420px]">
                     <div className="rounded-[2rem] bg-slate-900 p-2 shadow-2xl shadow-slate-400/30">
                       <div className="relative aspect-[9/16] w-full overflow-hidden rounded-[1.6rem] bg-black">
                         <video
+                          ref={mobileVideoRef}
                           key={localVideoUrl}
                           src={localVideoUrl}
                           controls
+                          autoPlay
                           playsInline
                           preload="metadata"
                           className={`absolute inset-0 h-full w-full object-contain bg-black transition-opacity ${
@@ -836,7 +1018,7 @@ export default function Labeling() {
                       </div>
                     </div>
                   </div>
-                ) : current && embedUrl ? (
+                ) : current && embedUrl && !isDesktop ? (
                   <div className="mx-auto w-full max-w-[420px]">
                     <div className="rounded-[2rem] bg-slate-900 p-2 shadow-2xl shadow-slate-400/30">
                       <div className="relative aspect-[9/16] w-full overflow-hidden rounded-[1.6rem] bg-black">
